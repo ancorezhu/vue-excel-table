@@ -13,6 +13,9 @@ class TableStore {
       mainWidth: null,
       mainHeight: null,
       rowHeight: 28,
+      rowHeightSum: null,
+      activeRowHeight: null,
+      heightBetweenTopSelected: null,
       theaderHeight: 30,
       scrollBarWidth: 8,
       tableBodyLeft: 0,
@@ -95,6 +98,18 @@ class TableStore {
     states.visibleRowStartIndex = Math.floor(states.tableBodyTop / states.rowHeight);
     states.visibleRowEndIndex = states.visibleRowStartIndex + Math.ceil(states.mainHeight / states.rowHeight);
     states.domData = states.showData.slice(states.visibleRowStartIndex, states.visibleRowEndIndex + 1);
+    // console.log(states.visibleRowStartIndex, states.visibleRowEndIndex);
+    // states.domData = states.showData;
+  }
+
+  calRowHeightSum() {
+    const { states } = this;
+    let total = 0;
+    states.showData.forEach((item) => {
+      total += isNaN(parseInt(item.rowHeight, 10)) ? states.rowHeight : parseInt(item.rowHeight, 10);
+    });
+    states.rowHeightSum = total;
+    // console.log(states.rowHeightSum);
   }
 
   initScrollBarLength() {
@@ -119,6 +134,7 @@ class TableStore {
 
   setScrollStatus(tableBodyTop, tableBodyLeft) {
     const { states } = this;
+    // console.log(tableBodyTop, states.rowHeightSum, states.mainHeight);
     if (tableBodyTop <= 0) {
       states.tableBodyTop = 0;
     } else if (tableBodyTop > states.tableHeight - states.mainHeight) {
@@ -126,6 +142,7 @@ class TableStore {
     } else {
       states.tableBodyTop = tableBodyTop;
     }
+    // console.log(tableBodyTop);
     if (tableBodyLeft <= 0) {
       states.tableBodyLeft = 0;
     } else if (tableBodyLeft > states.tableWidth - states.mainWidth) {
@@ -252,6 +269,13 @@ class TableStore {
     states.selector.selectedYIndex = states.editor.editorRange.minY;
     states.selector.selectedXArr = [states.editor.editorRange.minX, states.editor.editorRange.maxX];
     states.selector.selectedYArr = [states.editor.editorRange.minY, states.editor.editorRange.maxY];
+  }
+
+  selectRow() {
+    const { states } = this;
+    states.selector.selectedXIndex = states.editor.editorRange.minX;
+    states.selector.selectedXArr = [states.editor.editorRange.minX, states.editor.editorRange.maxX];
+    // console.log('selectRow', states.selector.selectedXArr);
   }
 
   handleFilters() {

@@ -10,10 +10,11 @@
       top: fixed ? `${store.states.theaderHeight}px` : '',
     }"
   >
+  <!-- height: `${showData.length ? store.states.rowHeightSum : 80}px`, -->
     <div
       :style="{
         width: `${store.states.tableWidth}px`,
-        height: `${showData.length ? showData.length * store.states.rowHeight : 80}px`,
+        height: `${showData.length ? store.states.rowHeightSum : 80}px`,
         transform: `translate3d(
           -${fixed ? 0 : store.states.tableBodyLeft}px,
           -${store.states.tableBodyTop}px,
@@ -21,6 +22,7 @@
         )`
       }"
     >
+    <!-- ${calTransformHeight(yIndex, tr)}px, -->
       <div
         class="ww-tr"
         v-for="(tr, yIndex) in domData"
@@ -28,7 +30,7 @@
         :style="{
           transform: `translate3d(
             0,
-            ${(yIndex + store.states.visibleRowStartIndex) * store.states.rowHeight}px,
+            ${calTransformHeight(yIndex, tr)}px,
             0
           )`,
         }"
@@ -42,7 +44,7 @@
           :class="classObj(tr, th, yIndex + store.states.visibleRowStartIndex, xIndex)"
           :data-key="th.key"
           @mouseenter="multiSelect($event, xIndex, yIndex + store.states.visibleRowStartIndex, th.type)"
-          @mousedown.prevent="selectCell($event, xIndex, yIndex + store.states.visibleRowStartIndex, th.type)"
+          @mousedown.prevent="selectCell($event, xIndex, yIndex + store.states.visibleRowStartIndex, th.type, tr.rowHeight)"
           v-show="th.fixed || allShow"
         >
           <el-checkbox
@@ -126,6 +128,9 @@ export default {
     autofill() {
       return this.store.states.autofill;
     },
+    visibleRowStartIndex() {
+      return this.store.states.visibleRowStartIndex;
+    },
   },
   methods: {
     selectionChange() {
@@ -134,7 +139,10 @@ export default {
     multiSelect(e, x, y, columnType) {
       this.store.multiSelect(e, x, y, columnType);
     },
-    selectCell(e, x, y, type) {
+    selectCell(e, x, y, type, height) {
+      this.store.states.activeRowHeight = height;
+      this.store.states.heightBetweenTopSelected = this.calTransformHeight(y);
+      console.log(this.calTransformHeight(y));
       this.$parent.selectCell(e, x, y, type);
     },
     format(value, type, format = true) {
@@ -148,10 +156,11 @@ export default {
       }
       return value;
     },
+    // height: `${row.rowHeight}px`,
     styleObj(row, column, rowIndex, columnIndex, columnsWidth) {
       return {
         width: `${columnsWidth[columnIndex]}px`,
-        height: `${this.rowHeight}px`,
+        height: `${row.rowHeight}px`,
         textAlign: column.align,
         ...this.cellStyle({
           row, column, rowIndex, columnIndex,
@@ -167,6 +176,31 @@ export default {
           row, column, rowIndex, columnIndex,
         }),
       };
+    },
+    // 滚动还是有问题${calTransformHeight(yIndex)}px,
+    // ！！！！把this.visibleRowStartIndex想办法放进公式里
+    calTransformHeight(index) {
+      let height = 0;
+      if (this.visibleRowStartIndex > 0) {
+        height += this.visibleRowStartIndex * this.rowHeight;
+      }
+      this.domData.some((itm, idx) => {
+        if (index !== idx) {
+          height += isNaN(parseInt(itm.rowHeight, 10)) ? this.rowHeight : parseInt(itm.rowHeight, 10);
+          return false;
+        }
+        return true;
+      });
+      return height;
+    },
+    calRowHeight(row) {
+      let height = 0;
+      if (this.visibleRowStartIndex > 0) {
+        height = row.rowHeight;
+      } else {
+        height = row.rowHeight;
+      }
+      return height;
     },
   },
 };
@@ -235,7 +269,7 @@ export default {
   width: 100%;
   text-indent: 4px;
   overflow: hidden;
-  white-space: nowrap;
+  white-space: nowrap; // 换成pre-line
   text-overflow: ellipsis;
 }
 

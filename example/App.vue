@@ -30,6 +30,7 @@
         :cellClassName="cellClassName"
         @selection-change="selectionChange"
         @select="select"
+        @cell-blur="cellBlur"
         :rowHeight="28" />
       </div>
     </div>
@@ -162,6 +163,15 @@ export default {
               }
             });
             this.$refs.excelTable.addItem(rowObj, 'unshift');
+          },
+        },
+        {
+          label: '测试',
+          checked: false,
+          handleChange: () => {
+            console.log(this.data);
+            this.data[10].rowHeight = 28;
+            this.data[15].rowHeight = 28;
           },
         },
       ],
@@ -331,7 +341,17 @@ export default {
           color: '@rgba()',
         }],
       });
+      data.list.forEach((item, index) => {
+        item.rowHeight = 28;
+        if (index === 10) {
+          item.rowHeight = 50;
+        } else if (index === 15) {
+          item.rowHeight = 100;
+        }
+      });
       this.$refs.excelTable.setData(data.list, null, 100);
+      // 测试数据数量
+      // this.$refs.excelTable.setData(data.list.splice(0, 2), null, 100);
       // axios.get('https://demo.kevinmint.com/1.json').then((res) => {
       //   this.columns = this.columnsData;
       //   this.$refs.excelTable.setData(res.data.list);
@@ -348,6 +368,9 @@ export default {
     },
     select(val, column, row) {
       console.log(val, column, row);
+    },
+    cellBlur(row, column, value) {
+      console.log(row, column, value);
     },
     // cellStyle({ rowIndex, columnIndex }) {
     //   if (rowIndex === 1) {

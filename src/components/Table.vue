@@ -41,6 +41,8 @@
         :columnsWidth="columnsWidth"
         :fixedCount="fixedCount"
         :store="store"
+        @cell-change="cellChange"
+        @cell-blur="cellBlur"
       />
       <table-header
         ref="fixedTheader"
@@ -268,6 +270,7 @@ export default {
             tableBodyLeft += 40 * e.detail;
           }
         }
+        // console.log(tableBodyTop);
         this.store.setScrollStatus(tableBodyTop, tableBodyLeft);
       };
       this.$refs.tbody.$el.addEventListener('mousewheel', mainWrapperWheel);
@@ -316,6 +319,7 @@ export default {
       }
       this.initColumns();
       this.store.calcDomData();
+      // this.store.calRowHeightSum();
     },
     handleResize() {
       const { states } = this.store;
@@ -413,7 +417,7 @@ export default {
       window.removeEventListener('keydown', this.keySubmit);
       window.removeEventListener('mousemove', this.multiSelectAdjustPostion);
     },
-    // 选择单元格
+    // 选择单元格 从选中高亮单元格改为高亮当前行
     selectCell(e, x, y, type) {
       // 已修改: 禁止整表操作
       // if (this.disabled) return;
@@ -430,7 +434,9 @@ export default {
       states.autofill.autofillYIndex = y;
       states.selector.selectedXIndex = x;
       states.selector.selectedYIndex = y;
-      states.selector.selectedXArr = [x, x];
+      // states.selector.selectedXArr = [x, x];
+      this.store.selectRow();
+      // console.log('selectCell', states.selector.selectedXArr);
       states.selector.selectedYArr = [y, y];
       states.selector.isSelected = true;
       if (this.disabled) {
@@ -442,10 +448,10 @@ export default {
         states.editor.editorYIndex = y;
         states.editor.curEditorCoverValue = states.showData[states.editor.editorYIndex][states.columns[states.editor.editorXIndex].key];
         this.$emit('select', states.editor.curEditorCoverValue, states.selector.selectedXIndex, states.selector.selectedYIndex);
-        this.$nextTick(() => {
-          this.adjustPosition();
-          this.$refs.editor.$refs.clipboard.focus();
-        });
+        // this.$nextTick(() => {
+        //   this.adjustPosition();
+        //   this.$refs.editor.$refs.clipboard.focus();
+        // });
       });
     },
     keySubmit(e) {
@@ -457,19 +463,20 @@ export default {
       if ((ctrlKey && keyCode === 89) || (metaKey && keyCode === 89)) {
         return this.store.operation('recovery');
       }
+      // 回车键和esc键原为退出编辑状态，但是为了能换行先注释掉
       if (states.editor.editing && (keyCode === 13 || keyCode === 27)) {
         states.editor.editing = false;
         states.editor.editType = 'text';
         return;
       }
-      // if (states.editor.editing || !states.editor.editorShow) {
-      //   return;
-      // }
       if ((ctrlKey && keyCode === 67) || (metaKey && keyCode === 67)) {
         return this.getContentToclipboard();
       }
       if ((ctrlKey && keyCode === 65) || (metaKey && keyCode === 65)) {
         return this.store.selectAllCells();
+      }
+      if (states.editor.editing || !states.editor.editorShow) {
+        return;
       }
       if (ctrlKey || metaKey) {
         return;
@@ -630,6 +637,7 @@ export default {
         states.editor.options = states.columns[states.editor.editorXIndex].options;
       }
       this.$nextTick(() => {
+        console.log(states.editor.editType);
         this.$refs.editor.$refs[states.editor.editType].focus();
       });
     },

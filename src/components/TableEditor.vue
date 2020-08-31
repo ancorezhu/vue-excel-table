@@ -18,7 +18,11 @@
         <textarea
           v-if="editor.editType == 'text'"
           ref="text"
-          v-model="editContent">
+          v-model="editContent"
+          :style="cellTextareaStyle"
+          @input="input"
+          @change="change"
+          @blur="blur">
         </textarea>
         <el-date-picker
           size="mini"
@@ -65,13 +69,14 @@
         </textarea>
       </div>
     </div>
-    <div
+    <!-- 把滑动复制先隐藏了 -->
+    <!-- <div
       ref="autofillHandler"
       class="ww-autofill-handler"
       :style="autofillHandlerStyle"
       @mousedown="handleAutofill"
       v-show="!editor.editing && editor.editorShow">
-    </div>
+    </div> -->
     <div
       class="ww-cover-area selected"
       :style="selectedStyle"></div>
@@ -109,6 +114,8 @@ export default {
   data() {
     return {
       editContent: '',
+      editorXIndex: null,
+      editorYIndex: null,
     };
   },
   computed: {
@@ -121,11 +128,16 @@ export default {
         left = this.columnsWidth.filter((item, index) => index < this.editor.editorXIndex).reduce((sum, item) => sum + item, 0) - this.store.states.tableBodyLeft;
       }
       return {
-        top: `${this.editor.editorYIndex * this.rowHeight - this.store.states.tableBodyTop + this.theaderHeight}px`,
+        top: `${this.store.states.heightBetweenTopSelected - this.store.states.tableBodyTop + this.theaderHeight}px`,
         left: `${left}px`,
         width: `${this.columnsWidth[this.editor.editorXIndex]}px`,
-        height: `${this.rowHeight}px`,
+        height: `${this.store.states.activeRowHeight}px`,
         'z-index': this.editor.editorIsFixed ? 4 : 1,
+      };
+    },
+    cellTextareaStyle() {
+      return {
+        height: `${this.store.states.activeRowHeight}px`,
       };
     },
     // 自动填充按钮
@@ -146,19 +158,20 @@ export default {
     // 选中区域
     selectedStyle() {
       return {
-        top: `${this.selector.selectedYArr[0] * this.rowHeight - this.store.states.tableBodyTop + this.theaderHeight}px`,
+        top: `${this.store.states.heightBetweenTopSelected - this.store.states.tableBodyTop + this.theaderHeight}px`,
         left: `${this.columnsWidth.filter((item, index) => index < this.selector.selectedXArr[0]).reduce((sum, item) => sum + item, 0) - this.store.states.tableBodyLeft}px`,
         width: `${this.columnsWidth.filter((item, index) => (index <= this.selector.selectedXArr[1]) && (index >= this.selector.selectedXArr[0])).reduce((sum, item) => sum + item, 0)}px`,
-        height: `${(this.selector.selectedYArr[1] - this.selector.selectedYArr[0] + 1) * this.rowHeight}px`,
+        height: `${this.store.states.activeRowHeight}px`,
       };
     },
-    // 固定列选中区域
+    // 固定列选中区域  top: `${this.store.states.heightBetweenTopSelected + this.theaderHeight}px`,
+    // !!!!滚动的时候选中条一直固定着，没有随着滚动而滚动
     fixedSelectedStyle() {
       return {
-        top: `${this.selector.selectedYArr[0] * this.rowHeight - this.store.states.tableBodyTop + this.theaderHeight}px`,
+        top: `${this.store.states.heightBetweenTopSelected - this.store.states.tableBodyTop + this.theaderHeight}px`,
         left: `${this.columnsWidth.filter((item, index) => index < this.selector.selectedXArr[0]).reduce((sum, item) => sum + item, 0)}px`,
         width: `${this.columnsWidth.filter((item, index) => (index <= this.selector.selectedXArr[1]) && (index >= this.selector.selectedXArr[0]) && this.columns[index].fixed).reduce((sum, item) => sum + item, 0)}px`,
-        height: `${(this.selector.selectedYArr[1] - this.selector.selectedYArr[0] + 1) * this.rowHeight}px`,
+        height: `${this.store.states.activeRowHeight}px`,
       };
     },
     // 自动填充区域
@@ -205,8 +218,10 @@ export default {
           if (this.columns[this.editor.editorXIndex].type === 'number') {
             this.limitNumber(this.editContent, true);
           }
-          this.store.getEditorContent(this.editContent);
-          this.editContent = '';
+          if (this.store.states.editor.editorShow) {
+            this.store.getEditorContent(this.editContent);
+            this.editContent = '';
+          }
         }
       },
     },
@@ -226,6 +241,7 @@ export default {
       if (format && isNaN(nVal)) {
         nVal = '';
       }
+      console.log('%c限制输入数字', 'color:red;font-size:16px;text-shadow:1px 1px 1px blue;', nVal);
       this.editContent = nVal;
     },
     setEditing() {
@@ -240,6 +256,21 @@ export default {
     },
     resetEditor() {
       this.store.resetEditor();
+    },
+    input() {
+      this.editorXIndex = this.editor.editorXIndex;
+      this.editorYIndex = this.editor.editorYIndex;
+    },
+    change(event) {
+      const row = this.store.states.data[this.editorYIndex];
+      const column = this.columns[this.editorXIndex];
+      // console.log(row, column, event);
+      this.$emit('cell-change', row, column, event);
+    },
+    blur(event) {
+      const row = this.store.states.data[this.editorYIndex];
+      const column = this.columns[this.editorXIndex];
+      this.$emit('cell-blur', row, column, event);
     },
   },
 };
@@ -262,7 +293,6 @@ export default {
   }
   textarea {
     width: 100%;
-    height: 50px;
     line-height: 20px;
     outline: 0;
     resize: none;

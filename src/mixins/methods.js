@@ -10,6 +10,12 @@ export default {
         this.store.handleFilters();
       });
     },
+    initScrollStatus() {
+      this.store.setScrollStatus(0, 0);
+    },
+    test() {
+      this.store.selectRow();
+    },
     getChangeData() {
       return this.store.states.changeData;
     },

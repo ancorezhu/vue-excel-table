@@ -12,5 +12,12 @@ export default {
         this.$refs.fixedTheader.checkedAll = false;
       }
     },
+    cellChange(row, column, event) {
+      // console.log(value);
+      this.$emit('cell-change', row, column, event);
+    },
+    cellBlur(row, column, event) {
+      this.$emit('cell-blur', row, column, event);
+    },
   },
 };
