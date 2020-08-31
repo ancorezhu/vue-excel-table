@@ -1,5 +1,5 @@
 {
-  "name": "vue-excel-table",
+  "name": "@baturu/vue-excel-table",
   "version": "1.0.1",
   "description": "An excel table for Vue",
   "author": {
